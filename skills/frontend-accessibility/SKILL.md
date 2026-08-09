@@ -280,6 +280,8 @@ catches `Escape`.
 When a native `<select>` fits the need, use it. Build this only when it does not.
 
 ```tsx
+import type { KeyboardEvent } from "react";
+
 import { useRef, useState } from "react";
 
 type Option = { value: string; label: string };
@@ -299,7 +301,7 @@ const Select = ({ id, label, options, value, onChange }: SelectProps) => {
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   // Moves the active option, commits a selection, or dismisses the list.
-  const handleKeyDown = (event: React.KeyboardEvent) => {
+  const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
     const currentIndex = options.findIndex((option) => option.value === activeValue);
 
     if (event.key === "ArrowDown") {

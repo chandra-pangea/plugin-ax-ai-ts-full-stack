@@ -235,7 +235,7 @@ If activating it changes the URL, it is a link, not a button.
 ## Import
 
 ```tsx
-import { Button } from "<ui-scope>/<primitives-pkg>";
+import { Button } from "<ui-scope>/<wrappers-pkg>";
 ```
 
 ## Props
@@ -271,14 +271,19 @@ Variants:
 Async action with progress:
 
 ```tsx
-const SubmitButton = () => {
+import { useState } from "react";
+
+import { Button } from "<ui-scope>/<wrappers-pkg>";
+
+// Wraps Button with a saving state driven by the caller's async action.
+const SubmitButton = ({ onSave }: { onSave: () => Promise<void> }) => {
   const [isSaving, setIsSaving] = useState(false);
 
   const handleClick = async () => {
     setIsSaving(true);
 
     try {
-      await saveForm();
+      await onSave();
     } finally {
       setIsSaving(false);
     }
@@ -295,6 +300,8 @@ const SubmitButton = () => {
 Icon-only, which always needs a name:
 
 ```tsx
+import { X as CloseIcon } from "lucide-react"; // any icon source works
+
 <Button variant="ghost" icon={<CloseIcon />} ariaLabel="Close dialog" />
 ```
 
@@ -325,15 +332,16 @@ Icon-only, which always needs a name:
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { useState } from "react";
+import { X as CloseIcon } from "lucide-react"; // any icon source works
 
-import { Button } from "./button.component";
+import { Button } from "./button";
 
 /**
  * Triggers an action. Use `primary` for the main action on a screen,
  * `secondary` alongside it, and `ghost` for tertiary actions.
  */
 const meta = {
-  title: "Primitives/Button",
+  title: "Wrappers/Button",
   component: Button,
   tags: ["autodocs"],
   argTypes: {

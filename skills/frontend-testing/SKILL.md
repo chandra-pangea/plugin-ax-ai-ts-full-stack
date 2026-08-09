@@ -512,6 +512,9 @@ import { defineConfig, devices } from "@playwright/test";
 const BASE_URL = process.env.E2E_BASE_URL ?? "<dev-url>";
 
 export default defineConfig({
+  // Playwright resolves testDir relative to this config file. This config sits at
+  // the repository root, so the repo-relative <e2e-dir> works as written; a config
+  // living elsewhere must adjust the path accordingly.
   testDir: "<e2e-dir>",
   testMatch: "**/*.spec.ts",
   fullyParallel: true,

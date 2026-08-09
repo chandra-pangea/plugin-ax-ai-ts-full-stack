@@ -110,7 +110,7 @@ Full reference: `package-scaffold/helpers/design-patterns.md`.
 │   ├── <main-class>.ts
 │   ├── <main-class>.test.ts
 │   └── index.ts
-├── test.env
+├── test.env              # only when tests need environment input
 ├── tsconfig.json
 ├── package.json
 ├── SKILL.md

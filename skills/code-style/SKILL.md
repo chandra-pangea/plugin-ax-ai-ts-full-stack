@@ -109,7 +109,7 @@ const normalizePageSize = (requested?: number): number => {
   return Math.min(Math.max(requested, 1), MAX_PAGE_SIZE);
 };
 
-// Loads one page of users, throwing a typed error when the id is unusable.
+// Loads one page of users at a size the datastore will accept.
 const listUsers = async (
   repository: UserRepository,
   pageSize?: number

@@ -208,7 +208,11 @@ export { HttpClient };
 - Never read environment variables inside a package. The application reads config and
   passes it in — otherwise the package cannot be used by a second application.
 
-For other patterns, see [`helpers/design-patterns.md`](helpers/design-patterns.md).
+For other patterns, see the helper:
+
+| Deep dive | Helper |
+| --------- | ------ |
+| Adapter, factory, strategy, and the other patterns a package's public class leans on | [`helpers/design-patterns.md`](helpers/design-patterns.md) |
 
 ---
 
@@ -328,7 +332,7 @@ src/helpers/
     "composite": true
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["**/*.test.ts"]
+  "exclude": ["src/**/*.test.ts", "dist", "node_modules"]
 }
 ```
 
@@ -346,6 +350,9 @@ When `test-runner` is `jest`:
   "description": "<one line>",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" }
+  },
   "files": ["dist"],
   "scripts": {
     "build": "tsc --build",
@@ -362,19 +369,24 @@ When `test-runner` is `jest`:
 }
 ```
 
+Jest 30 renamed `--testPathPattern` to `--testPathPatterns`; on Jest 29 and earlier
+use the singular form.
+
 When `test-runner` is `vitest`, the scripts become:
 
 ```json
 {
-  "test": "vitest run --root ../..  --dir <packages-dir>/<pkg-prefix><name>",
+  "test": "vitest run --root ../.. --dir <packages-dir>/<pkg-prefix><name>",
   "test:watch": "vitest --root ../.. --dir <packages-dir>/<pkg-prefix><name>"
 }
 ```
 
-Set `"type": "module"` only when `module-system` is `esm`. Under `cjs`, omit it and
-drop the `.js` extensions from relative imports.
+Set `"type": "module"` only when `module-system` is `esm`. Under `cjs`, omit it, drop
+the `.js` extensions from relative imports, and the `exports` entry uses `"require"`
+instead of `"import"`. Every subpath added later gets its own `exports` entry — an
+export that does not resolve after a clean build fails `package-checklist`.
 
-### `test.env`
+### `test.env` (optional — only when tests need environment input)
 
 ```
 # Optional inputs for the test harness. Package code never reads this file —

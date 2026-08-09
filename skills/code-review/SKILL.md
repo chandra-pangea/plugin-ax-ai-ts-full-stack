@@ -132,3 +132,10 @@ Last reviewed: <ISO date>
 - [ ] Package name and folder checked against the profile
 - [ ] Severity assigned to every finding
 - [ ] Previously open issues that are now fixed moved to Completed
+
+## Related skills
+
+- **`code-style`** — source of the style, types, and generics categories
+- **`backend-testing`** / **`frontend-testing`** — the coverage the test-coverage category checks against
+- **`package-checklist`** — the gate the checklist category enforces
+- **`backend-architecture`** / **`frontend-architecture`** — the boundaries behind the coupling and invariant categories

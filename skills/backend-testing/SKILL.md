@@ -93,6 +93,7 @@ const result = await service.getById("123");
 **Right:**
 
 ```typescript
+const userRepository = PostgresUserRepository.create(testDb); // real adapter, wired to <test-db-url>
 const service = UserService.create(userRepository);
 const result = await service.getById(testUserId);
 ```

@@ -20,13 +20,13 @@ the reader about to make the mistake you already made.
 
 **Record decisions, not just observations.** It is fine — often necessary — for a row
 to describe where the project is going rather than where it is: an `e2e-dir` that does
-not exist yet, a `touch-target-floor` nothing enforces. Writing it down stops every
+not exist yet, a `wrappers-pkg` no package implements yet. Writing it down stops every
 future task from re-opening the question. Marking it as a target stops the profile
 from becoming a lie.
 
 **A repository with two workspaces answers some keys twice.** If a frontend and a
 backend live side by side with separate lockfiles and toolchains, give both values and
-say which is which — particularly for the TypeScript keys, which describe the runtime
+say which is which — particularly for the toolchain keys, which describe the runtime
 that executes the output.
 
 The keys detection is least reliable for, so worth setting even when you skip the
@@ -44,7 +44,6 @@ they do), and `test-runner`.
 | `pkg-scope` | `@acme` | npm scope for internal packages. Empty if packages are unscoped. |
 | `pkg-prefix` | `util-` | Folder prefix inside `packages-dir`. May differ from the scope; empty is fine. |
 | `ui-scope` | `@acme-ui` | Scope for shared UI packages. Same as `pkg-scope` in a single-scope repo, and deliberately different where the two publish separately. |
-| `ui-prefix` | *(none)* | Folder prefix inside `ui-packages-dir`. Often empty even where `pkg-prefix` is not. |
 
 A package named `@acme/logger` living at `packages/util-logger/` has
 `pkg-scope: @acme` and `pkg-prefix: util-`. The scope and the folder prefix are
@@ -52,8 +51,8 @@ independent — state both.
 
 ## Layout
 
-Paths are relative to the repository root, so a skill can locate a file without
-knowing which workspace it is in.
+Paths are relative to the repository root unless a row says otherwise, so a skill can
+locate a file without knowing which workspace it is in.
 
 | Key | Value | Notes |
 | --- | ----- | ----- |
@@ -62,8 +61,7 @@ knowing which workspace it is in.
 | `web-dir` | `web` | Frontend application root. Contains `src/`. Watch for a singular `app`, not `apps/<name>`. |
 | `ui-packages-dir` | `packages` | Shared UI packages. Same as `packages-dir` in a single-workspace repo. |
 | `e2e-dir` | `web/e2e` | Playwright specs. One location for the whole repo. |
-| `docs-dir` | `docs` | Per-package and per-app documentation. |
-| `review-doc` | `docs/review.md` | Path, relative to each package, where `code-review` writes findings. |
+| `review-doc` | `docs/review.md` | Relative to **each package root**, not the repository root — every package gets its own review document, written by `code-review`. |
 
 ## Toolchain
 
@@ -77,17 +75,11 @@ knowing which workspace it is in.
 
 ## TypeScript
 
-Set these **per workspace** where a repository holds more than one. They are not
-preferences — they describe the runtime that executes the output, and sibling packages
-disagreeing is a defect rather than a set of local choices. See
-[`code-style/helpers/typescript-conventions.md`](skills/code-style/helpers/typescript-conventions.md).
-
-| Key | Value | Options |
-| --- | ----- | ------- |
-| `ts-target` | `ES2022` | Lowest runtime the output must run on. |
-| `ts-module-resolution` | `nodenext` | `nodenext` (Node ESM — relative imports carry `.js`) \| `bundler` (Vite/webpack/tsup — no extension) \| `node` (legacy; cannot read `exports` maps) |
-| `ts-strict-extras` | `noUncheckedIndexedAccess` | Flags enabled beyond `strict`. Empty is honest; a list you do not actually enable is not. |
-| `ts-project-references` | `yes` | Whether the workspace root config lists every package under `references`, with `composite: true` on each. |
+The compiler baseline is not profiled here: it lives once in the workspace
+`tsconfig.base.json` and is governed by the `code-style` skill's
+`typescript-conventions` helper — target, module resolution, strict extras, and
+project references are read from that config, not from this file. Sibling packages
+disagreeing with the base config is a defect rather than a set of local choices.
 
 The tell that a workspace has drifted: packages whose relative imports carry `.js`
 extensions while resolution is set to `node` or `bundler`, or a shared base config that
@@ -108,7 +100,6 @@ and note the gap — `code-review` will raise `types` findings until it closes.
 | `wrappers-pkg` | *(none)* | Brand wrappers over the primitives. **Mandatory when `primitives-pkg` is vendored** — it is the only layer where local changes survive regeneration. |
 | `utils-pkg` | `web-utils` | Frontend utilities. No UI, no component-framework imports. |
 | `dark-mode-strategy` | `class` | `class` \| `data-attribute` — what the theme provider writes to the document element. Pick one; two is a bug. |
-| `touch-target-floor` | `44` | Minimum touch target in CSS px, **and where it is enforced**. Component libraries commonly ship 32–36px, so name the layer that raises it. Record the waiver if the project takes one. |
 | `dev-url` | `http://localhost:3000` | Base URL the dev server listens on. |
 
 State the UI package dependency direction if the repo has more than two tiers. Each

@@ -211,7 +211,17 @@ This rule is what makes the rest of the set enforceable. Without it, every skill
 three standing violations that everyone learns to ignore, and the ignoring spreads.
 
 ---
-
+### 12. Components
+- Components are presentational shells. They receive data and callbacks as props.
+- Components do not fetch data, orchestrate async flows, or branch on business logic.
+- components are not stateful beyond UI-only state (modal open, active tab, input value).
+- components there should not be multiple components in a single file. Each component should be in its own file.
+- Components should be organized in a folder structure that reflects their purpose and usage within the application.
+- Components should be named using PascalCase, and their file names should be in kebab-case with a `.component.tsx` suffix.
+- Components should be documented with clear and concise comments that explain their purpose, props, and usage.
+- Components should be tested with unit tests that cover their rendering, behavior, and interactions.
+- Components should be reusable and composable, allowing them to be easily integrated into different parts of the application.
+- components maximum 100 lines of code. If a component exceeds this limit, it should be refactored into smaller, more focused components.
 ## Naming
 
 - Components — PascalCase export, kebab-case file: `user-card.component.tsx` exporting
@@ -408,9 +418,11 @@ missing in dark is a token that renders transparent in dark mode, silently.
 
 ### Layer 2 — the utility-class bridge
 
-Tailwind v4 is configured in CSS, not in a JavaScript config file. **Do not add a
-`tailwind.config.ts` to a v4 project** — it is not read, and its presence tells the
-next reader to edit a file that does nothing.
+When `css-framework-version` is `4`, Tailwind is configured in CSS, not in a
+JavaScript config file. **Do not add a `tailwind.config.ts` to a v4 project** — it is
+not read, and its presence tells the next reader to edit a file that does nothing.
+When it is `3`, the config file is real and the CSS-first `@theme` block below does
+not apply — the token mapping lives in `tailwind.config.ts` instead.
 
 ```css
 /* <theme-pkg>/src/tailwind.css — maps utility names onto the tokens above */
@@ -611,6 +623,8 @@ default that survives all the way to a production incident.
 ```tsx
 import { lazy, Suspense } from "react";
 
+import { LoadingIndicator } from "<ui-scope>/<wrappers-pkg>";
+
 const Dashboard = lazy(() => import("./pages/dashboard.page"));
 
 const App = () => {
@@ -629,6 +643,8 @@ export { App };
 Measure first. `memo` on a cheap component costs more than it saves.
 
 ```tsx
+import type { Product } from "./product.types";
+
 import { memo } from "react";
 
 const ProductCard = memo(({ product }: { product: Product }) => {
