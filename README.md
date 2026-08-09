@@ -16,6 +16,7 @@ the repo as a plugin; Cursor, Codex, and Gemini CLI get the same skills globally
 ```
 skills/                     the ten skills — the whole deliverable
 .claude-plugin/             plugin + marketplace manifests (Claude Code)
+plugin.json                 open Agent Plugins manifest (Cursor and other conformant clients)
 hooks/hooks.json            SessionStart hook that injects the digest below
 standards-digest.md         always-active distillation of the mandatory rules
 install.sh                  global install for Cursor / Codex / Gemini CLI
@@ -102,7 +103,25 @@ What you get, in every project, with no per-repo files:
 
 Updating: `git pull` in the clone, then `claude plugin marketplace update ax-ai-skills`.
 
-## Installing — Cursor, Codex, Gemini CLI
+## Installing — Cursor (as a plugin)
+
+The root [`plugin.json`](plugin.json) makes this repo a conformant
+[Agent Plugins](https://agent-plugins.org/) package, which Cursor loads without
+changes. From a clone:
+
+```bash
+ln -s /path/to/plugin-ax-ai-ts-full-stack ~/.cursor/plugins/local/ts-full-stack
+```
+
+Then restart Cursor (or **Developer: Reload Window**). Teams/Enterprise plans can
+instead import the repo as a team marketplace from the dashboard.
+
+The plugin route loads the ten skills. The Agent Plugins standard has no hooks, so
+the **always-active digest** still comes from `install.sh` below — run both for the
+full Claude Code-equivalent behavior, or just `install.sh`, which also covers the
+skills.
+
+## Installing — Cursor, Codex, Gemini CLI (global skills + digest)
 
 These tools read the same open Agent Skills format from a **global** directory, so
 one install serves every project. Anyone with repo access, starting from nothing:
