@@ -105,7 +105,13 @@ Updating: `git pull` in the clone, then `claude plugin marketplace update ax-ai-
 ## Installing — Cursor, Codex, Gemini CLI
 
 These tools read the same open Agent Skills format from a **global** directory, so
-one install serves every project:
+one install serves every project. Anyone with repo access, starting from nothing:
+
+```bash
+git clone https://dev.azure.com/aatmix/ax-ai-platform/_git/plugin-ax-ai-ts-full-stack "$HOME/.ts-full-stack" && "$HOME/.ts-full-stack/install.sh"
+```
+
+Or from a clone you already have:
 
 ```bash
 /path/to/plugin-ax-ai-ts-full-stack/install.sh
