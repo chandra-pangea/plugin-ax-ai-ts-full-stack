@@ -1,0 +1,13 @@
+{
+  "name": "ax-ai-skills",
+  "owner": { "name": "Aatmix", "email": "it@aatmix.com" },
+  "description": "Aatmix agent skill plugins for JS/TS full-stack development. Private — added from a local clone or the Azure DevOps remote, never published.",
+  "plugins": [
+    {
+      "name": "ts-full-stack",
+      "source": "./",
+      "description": "Ten profile-driven full-stack skills plus an always-active standards digest for JS/TS projects.",
+      "version": "2.1.0"
+    }
+  ]
+}
