@@ -5,5 +5,10 @@
   "description": "Ten portable JS/TS full-stack skills — architecture, code style, zero-mock testing, package scaffolding and validation, accessibility, component docs, and review — resolved against a per-repo STACK-PROFILE.md with repo inference as fallback.",
   "author": { "name": "Aatmix", "email": "it@aatmix.com" },
   "repository": "https://dev.azure.com/aatmix/ax-ai-platform/_git/plugin-ax-ai-ts-full-stack",
-  "keywords": ["typescript", "javascript", "react", "node", "skills", "standards"]
+  "keywords": ["typescript", "javascript", "react", "node", "skills", "standards"],
+  "extensions": {
+    "com.anthropic.claude-code": {
+      "hooks": "./com.anthropic.claude-code/hooks/hooks.json"
+    }
+  }
 }

@@ -14,10 +14,13 @@ the repo as a plugin; Cursor, Codex, and Gemini CLI get the same skills globally
 `install.sh`.
 
 ```
-skills/                     the ten skills — the whole deliverable
-.claude-plugin/             plugin + marketplace manifests (Claude Code)
+skills/                     the ten skills — the whole deliverable (spec component)
 plugin.json                 open Agent Plugins manifest (Cursor and other conformant clients)
-hooks/hooks.json            SessionStart hook that injects the digest below
+.claude-plugin/             plugin + marketplace manifests (Claude Code)
+com.anthropic.claude-code/  Claude Code extension namespace: the SessionStart hook
+                            that injects the digest below (hooks are not in the
+                            open standard's v1, so they live here per its
+                            reverse-domain extension convention)
 standards-digest.md         always-active distillation of the mandatory rules
 install.sh                  global install for Cursor / Codex / Gemini CLI
 STACK-PROFILE.template.md   what a consuming repo fills in (optional)
@@ -318,7 +321,8 @@ done
 grep -rnE '@(acme|canopy|util)/|localhost:[0-9]+|/Users/' skills/ | grep -v '<' | grep -v '// wrong'
 
 # Manifests are valid JSON
-jq . .claude-plugin/plugin.json .claude-plugin/marketplace.json hooks/hooks.json > /dev/null
+jq . plugin.json .claude-plugin/plugin.json .claude-plugin/marketplace.json \
+  com.anthropic.claude-code/hooks/hooks.json > /dev/null
 ```
 
 - [ ] Checks above pass
