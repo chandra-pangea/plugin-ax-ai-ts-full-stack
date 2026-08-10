@@ -49,12 +49,12 @@ Never invent a new convention when the repo already expresses one.
 
 - **`code-style`** — arrow functions, consolidated exports, type separation, import
   ordering, no hardcoded values, function comments, focused classes.
-- **`code-style/helpers/naming-conventions.md`** — kebab-case files, PascalCase
+- **`code-style/references/naming-conventions.md`** — kebab-case files, PascalCase
   classes, camelCase functions, UPPER_SNAKE_CASE constants.
-- **`code-style/helpers/typescript-conventions.md`** — the compiler baseline this
+- **`code-style/references/typescript-conventions.md`** — the compiler baseline this
   package's `tsconfig.json` extends, and the module resolution it must not diverge
   from.
-- **`code-style/helpers/generics.md`** — a package's public contract is where
+- **`code-style/references/generics.md`** — a package's public contract is where
   generics either earn their place or become casts. Ports are generic over their
   entity; the adapter fixes the parameters and nothing generic leaks past it.
 - **`backend-testing`** — zero mocking, real execution, co-located tests.
@@ -210,9 +210,10 @@ export { HttpClient };
 
 For other patterns, see the helper:
 
-| Deep dive | Helper |
-| --------- | ------ |
-| Adapter, factory, strategy, and the other patterns a package's public class leans on | [`helpers/design-patterns.md`](helpers/design-patterns.md) |
+| Deep dive | Reference |
+| --------- | --------- |
+| Adapter, factory, strategy, and the other patterns a package's public class leans on | [`references/design-patterns.md`](references/design-patterns.md) |
+| The SKILL.md every package must carry, with vendoring and provenance instructions | [`references/package-skill-template.md`](references/package-skill-template.md) |
 
 ---
 
@@ -398,72 +399,8 @@ export that does not resolve after a clean build fails `package-checklist`.
 ## 5. Package `SKILL.md`
 
 Every package carries its own `SKILL.md` at its root, so another repository can adopt
-it.
-
-````markdown
----
-name: <pkg-prefix><name>
-description: <What the package does and when to reach for it.>
-metadata:
-  version: "0.1.0"
-  repo: <repo-url>
-  path: <packages-dir>/<pkg-prefix><name>
----
-
-# <pkg-scope>/<name>
-
-<One-line summary.>
-
-Full API reference: [README.md](./README.md).
-
-## When to use
-
-Adopt this package when you need:
-
-- <capability>
-- <capability>
-
-## Adopting into another repository
-
-```bash
-PACKAGE_REF="<git-tag-or-main>"
-TMPDIR=$(mktemp -d)
-git clone --depth 1 --branch "$PACKAGE_REF" --filter=blob:none --sparse \
-  <repo-url> "$TMPDIR"
-git -C "$TMPDIR" sparse-checkout set <packages-dir>/<pkg-prefix><name>
-cp -r "$TMPDIR/<packages-dir>/<pkg-prefix><name>" ./<packages-dir>/
-rm -rf "$TMPDIR"
-```
-
-Then install and build from the package directory.
-
-### Provenance
-
-Record where the copy came from, in `.vendor.json`:
-
-```json
-{
-  "source": "<repo-url>",
-  "package": "<packages-dir>/<pkg-prefix><name>",
-  "tag": "<git-tag-or-main>",
-  "vendoredAt": "<ISO-8601 date>",
-  "forked": false
-}
-```
-
-Updating means repeating the sparse checkout at a new ref and updating that file.
-
-## Quick usage
-
-(5–10 lines, no more)
-
-## Rules
-
-- Do not modify adopted code. Extend through adapters or wrappers.
-- If you must modify it, set `"forked": true` in `.vendor.json`.
-- Connection strings and secrets come from the application, never from inside this
-  package.
-````
+it. The full template — including vendoring and provenance instructions — is in
+[`references/package-skill-template.md`](references/package-skill-template.md).
 
 ---
 

@@ -166,263 +166,30 @@ parallel runs interfere and turns one failure into a cascade.
 
 ## Patterns
 
-### Authentication flow
-
-```typescript
-import { expect, test } from "@playwright/test";
-
-import { buildCredentials, signUpAndLogIn } from "./fixtures/auth.fixture";
-
-test.describe("authentication", () => {
-  test("signs in with valid credentials and lands on the dashboard", async ({ page }) => {
-    const credentials = buildCredentials();
-    await signUpAndLogIn(page, credentials);
-
-    await expect(page).toHaveURL("/dashboard");
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
-  });
-
-  test("shows a validation error for a malformed email", async ({ page }) => {
-    await page.goto("/login");
-    await page.getByLabel("Email").fill("not-an-email");
-    await page.getByLabel("Password").fill("whatever-value");
-    await page.getByRole("button", { name: "Sign in" }).click();
-
-    await expect(page.getByRole("alert")).toContainText("valid email");
-    await expect(page).toHaveURL("/login");
-  });
-
-  test("requires a password", async ({ page }) => {
-    await page.goto("/login");
-    await page.getByLabel("Email").fill("someone@example.test");
-    await page.getByRole("button", { name: "Sign in" }).click();
-
-    await expect(page.getByRole("alert")).toContainText("Password is required");
-  });
-
-  test("redirects an unauthenticated visitor away from the dashboard", async ({ page }) => {
-    await page.goto("/dashboard");
-
-    await expect(page).toHaveURL("/login");
-  });
-
-  test("signs out and returns to the home page", async ({ page }) => {
-    await signUpAndLogIn(page, buildCredentials());
-    await page.getByRole("button", { name: "Sign out" }).click();
-
-    await expect(page).toHaveURL("/");
-    await expect(page.getByRole("heading", { name: "Welcome" })).toBeVisible();
-  });
-});
-```
-
-### Forms, loading, and failure
-
-```typescript
-import { expect, test } from "@playwright/test";
-
-import { buildCredentials, signUpAndLogIn } from "./fixtures/auth.fixture";
-
-test.describe("profile editing", () => {
-  test.beforeEach(async ({ page }) => {
-    await signUpAndLogIn(page, buildCredentials());
-    await page.goto("/profile/edit");
-  });
-
-  test("saves valid changes and persists them", async ({ page }) => {
-    const firstName = "Ada";
-
-    await page.getByLabel("First name").fill(firstName);
-    await page.getByRole("button", { name: "Save" }).click();
-
-    await expect(page.getByRole("status")).toContainText("Profile updated");
-
-    await page.goto("/profile");
-    await expect(page.getByRole("heading", { name: firstName })).toBeVisible();
-  });
-
-  test("reports a missing required field", async ({ page }) => {
-    await page.getByLabel("First name").clear();
-    await page.getByRole("button", { name: "Save" }).click();
-
-    await expect(page.getByRole("alert")).toContainText("First name is required");
-  });
-
-  test("disables the button and shows progress while saving", async ({ page }) => {
-    await page.getByLabel("First name").fill("Grace");
-
-    const save = page.getByRole("button", { name: "Save" });
-    await save.click();
-
-    await expect(save).toBeDisabled();
-    await expect(page.getByRole("status")).toContainText("Profile updated");
-    await expect(save).toBeEnabled();
-  });
-
-  test("recovers when the server rejects the save", async ({ page }) => {
-    // Injecting a transport failure — the only interception this skill permits.
-    await page.route("**/api/profile", (route) => route.abort("failed"));
-
-    await page.getByLabel("First name").fill("Alan");
-    await page.getByRole("button", { name: "Save" }).click();
-
-    await expect(page.getByRole("alert")).toContainText("Failed to update profile");
-    await expect(page.getByLabel("First name")).toBeEnabled();
-  });
-});
-```
-
-### Empty state
-
-```typescript
-import { expect, test } from "@playwright/test";
-
-test("shows an empty placeholder when a search returns nothing", async ({ page }) => {
-  await page.goto("/products");
-  await page.getByLabel("Search products").fill("zzzz-no-such-product");
-  await page.getByRole("button", { name: "Search" }).click();
-
-  await expect(page.getByText("No products found")).toBeVisible();
-  await expect(page.getByRole("listitem")).toHaveCount(0);
-});
-```
-
-### Navigation
-
-```typescript
-import { expect, test } from "@playwright/test";
-
-test.describe("navigation", () => {
-  test("moves from the home page into products", async ({ page }) => {
-    await page.goto("/");
-    await page.getByRole("link", { name: "Products" }).click();
-
-    await expect(page).toHaveURL("/products");
-    await expect(page.getByRole("heading", { name: "Products" })).toBeVisible();
-  });
-
-  test("restores the previous page on browser back", async ({ page }) => {
-    await page.goto("/products");
-    await page.getByRole("link", { name: "Wireless keyboard" }).click();
-    await expect(page).toHaveURL(/\/products\/[\w-]+$/);
-
-    await page.goBack();
-    await expect(page).toHaveURL("/products");
-    await expect(page.getByRole("heading", { name: "Products" })).toBeVisible();
-  });
-
-  test("renders a not-found page for an unknown route", async ({ page }) => {
-    await page.goto("/no-such-page");
-
-    await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
-  });
-});
-```
-
-### Accessibility
-
-```typescript
-import { expect, test } from "@playwright/test";
-import AxeBuilder from "@axe-core/playwright";
-
-test.describe("accessibility", () => {
-  test("home page has no detectable violations", async ({ page }) => {
-    await page.goto("/");
-
-    const results = await new AxeBuilder({ page })
-      .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
-      .analyze();
-
-    expect(results.violations).toEqual([]);
-  });
-
-  test("login form is reachable and operable by keyboard alone", async ({ page }) => {
-    await page.goto("/login");
-
-    await page.keyboard.press("Tab");
-    await expect(page.getByLabel("Email")).toBeFocused();
-
-    await page.keyboard.press("Tab");
-    await expect(page.getByLabel("Password")).toBeFocused();
-
-    await page.keyboard.press("Tab");
-    await expect(page.getByRole("button", { name: "Sign in" })).toBeFocused();
-  });
-
-  test("dialog closes on Escape and returns focus to its trigger", async ({ page }) => {
-    await page.goto("/settings");
-
-    const trigger = page.getByRole("button", { name: "Delete account" });
-    await trigger.click();
-    await expect(page.getByRole("dialog")).toBeVisible();
-
-    await page.keyboard.press("Escape");
-    await expect(page.getByRole("dialog")).toBeHidden();
-    await expect(trigger).toBeFocused();
-  });
-
-  test("page exposes its landmarks", async ({ page }) => {
-    await page.goto("/");
-
-    await expect(page.getByRole("navigation")).toBeVisible();
-    await expect(page.getByRole("main")).toBeVisible();
-    await expect(page.getByRole("contentinfo")).toBeVisible();
-  });
-
-  test("dark theme keeps sufficient contrast", async ({ page }) => {
-    await page.emulateMedia({ colorScheme: "dark" });
-    await page.goto("/");
-
-    const results = await new AxeBuilder({ page })
-      .withTags(["wcag2aa"])
-      .analyze();
-
-    expect(results.violations).toEqual([]);
-  });
-});
-```
-
-### Mobile
-
-```typescript
-import { devices, expect, test } from "@playwright/test";
-
-const MINIMUM_TOUCH_TARGET_PX = 44;
-
-test.describe("mobile", () => {
-  test.use({ ...devices["iPhone SE"] });
-
-  test("renders without horizontal overflow", async ({ page }) => {
-    await page.goto("/");
-
-    const overflow = await page.evaluate(() => {
-      return document.documentElement.scrollWidth - document.documentElement.clientWidth;
-    });
-
-    expect(overflow).toBeLessThanOrEqual(0);
-  });
-
-  test("gives primary actions a large enough touch target", async ({ page }) => {
-    await page.goto("/");
-
-    const button = page.getByRole("button", { name: "Get started" });
-    const box = await button.boundingBox();
-
-    expect(box?.height ?? 0).toBeGreaterThanOrEqual(MINIMUM_TOUCH_TARGET_PX);
-    expect(box?.width ?? 0).toBeGreaterThanOrEqual(MINIMUM_TOUCH_TARGET_PX);
-  });
-
-  test("opens the collapsed navigation", async ({ page }) => {
-    await page.goto("/");
-
-    await page.getByRole("button", { name: "Open menu" }).click();
-    await expect(page.getByRole("navigation")).toBeVisible();
-  });
-});
-```
-
-Measuring every button on the page turns one oversight into dozens of failures and
-makes the suite slow. Assert on the targets that matter.
+A worked spec example for every pattern below lives in
+[`references/spec-patterns.md`](references/spec-patterns.md). The per-pattern
+requirements:
+
+- **Authentication flow** — happy-path sign-in landing on the dashboard, a
+  malformed email error, an empty password error, redirect of an unauthenticated
+  visitor away from a protected route, and sign-out returning home.
+- **Forms, loading, and failure** — a valid save persists across navigation, a
+  missing required field errors, the submit button disables and progress is
+  announced while saving, and a server rejection shows an error while leaving the
+  form recoverable (the failure injected by aborting the route — the only
+  interception this skill permits).
+- **Empty state** — a query with no results shows the empty placeholder and zero
+  list items.
+- **Navigation** — link navigation reaches the target page, browser back restores
+  the previous page, and an unknown route renders a not-found page.
+- **Accessibility** — an automated axe scan (WCAG 2 A/AA plus 2.1 AA) with zero
+  violations, keyboard-only reachability of forms, dialogs closing on Escape and
+  returning focus to their trigger, exposed landmarks, and a dark-theme contrast
+  scan.
+- **Mobile** — no horizontal overflow at a small viewport, primary actions meet a
+  44px minimum touch target, and the collapsed navigation opens. Assert on the
+  targets that matter, not every button on the page.
+- **Theming and design-system surfaces** — see below.
 
 ### Theming and design-system surfaces
 
@@ -435,61 +202,12 @@ Assert on **computed styles**, not class names. `toHaveClass("bg-primary")` pass
 while the token behind `bg-primary` is undefined; the whole failure mode lives in the
 gap between the class and the value it resolves to.
 
-```typescript
-import type { Page } from "@playwright/test";
-
-import { expect, test } from "@playwright/test";
-
-// Reads a resolved custom property off the document element.
-const readToken = async (page: Page, token: string): Promise<string> => {
-  return page.evaluate((name) => {
-    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  }, token);
-};
-
-test.describe("theming", () => {
-  test("switches to dark and back", async ({ page }) => {
-    await page.goto("/");
-
-    const light = await readToken(page, "--background");
-    await page.getByRole("button", { name: "Dark" }).click();
-
-    await expect(page.locator("html")).toHaveClass(/dark/);
-    expect(await readToken(page, "--background")).not.toBe(light);
-  });
-
-  test("remembers the chosen theme across a reload", async ({ page }) => {
-    await page.goto("/");
-    await page.getByRole("button", { name: "Dark" }).click();
-    await page.reload();
-
-    await expect(page.locator("html")).toHaveClass(/dark/);
-  });
-
-  test("honours the system preference on a first visit", async ({ page }) => {
-    await page.emulateMedia({ colorScheme: "dark" });
-    await page.goto("/");
-
-    await expect(page.locator("html")).toHaveClass(/dark/);
-  });
-
-  test("resolves every semantic token in both modes", async ({ page }) => {
-    const tokens = ["--background", "--foreground", "--primary", "--destructive"];
-    await page.goto("/");
-
-    for (const mode of ["light", "dark"] as const) {
-      await page.emulateMedia({ colorScheme: mode });
-
-      for (const token of tokens) {
-        expect(await readToken(page, token), `${token} in ${mode}`).not.toBe("");
-      }
-    }
-  });
-});
-```
-
-An undefined token is the failure this catches. It renders as nothing, in one mode
-only, and no build step reports it.
+Required coverage: the theme switches to dark and back with the resolved token value
+actually changing, the chosen theme survives a reload, the system preference is
+honoured on a first visit, and every semantic token resolves to a non-empty value in
+both modes. The worked spec — including the `readToken` helper that reads a resolved
+custom property off the document element — is in
+[`references/spec-patterns.md`](references/spec-patterns.md).
 
 For a component showcase, cover the axes rather than the instances — every variant
 renders with a non-transparent background, every size produces a distinct height,
@@ -504,137 +222,24 @@ missing one is a gap. Do not invent a login screen to satisfy a checklist.
 
 ---
 
-## Configuration
+## Configuration, test plan, and debugging
 
-```typescript
-import { defineConfig, devices } from "@playwright/test";
+The full Playwright config sample, the npm scripts, the e2e plan template, and the
+debugging guide live in
+[`references/configuration-and-debugging.md`](references/configuration-and-debugging.md).
+The rules from those sections that always apply:
 
-const BASE_URL = process.env.E2E_BASE_URL ?? "<dev-url>";
-
-export default defineConfig({
-  // Playwright resolves testDir relative to this config file. This config sits at
-  // the repository root, so the repo-relative <e2e-dir> works as written; a config
-  // living elsewhere must adjust the path accordingly.
-  testDir: "<e2e-dir>",
-  testMatch: "**/*.spec.ts",
-  fullyParallel: true,
-  forbidOnly: Boolean(process.env.CI),
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: process.env.CI ? "github" : "list",
-
-  use: {
-    baseURL: BASE_URL,
-    trace: "on-first-retry",
-    screenshot: "only-on-failure",
-    video: "retain-on-failure",
-  },
-
-  projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
-    { name: "firefox", use: { ...devices["Desktop Firefox"] } },
-    { name: "webkit", use: { ...devices["Desktop Safari"] } },
-    { name: "mobile-chrome", use: { ...devices["Pixel 5"] } },
-    { name: "mobile-safari", use: { ...devices["iPhone 12"] } },
-  ],
-
-  webServer: {
-    command: "<pkg-manager> run dev",
-    url: BASE_URL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
-});
-```
-
-Scripts:
-
-```json
-{
-  "scripts": {
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
-    "test:e2e:debug": "playwright test --debug",
-    "test:e2e:headed": "playwright test --headed"
-  }
-}
-```
-
----
-
-## Test plan
-
-Write `<web-dir>/docs/e2e-plan.md` before the first spec. It is what you check
-coverage against afterwards.
-
-```markdown
-# End-to-End Test Plan
-
-## Scope
-
-- Application: <dev-url>
-- Accounts: generated per test
-- Data: seeded through the public API before each spec
-
-## Flows
-
-### Authentication
-- [ ] Sign in with valid credentials → dashboard
-- [ ] Invalid email format → error
-- [ ] Empty password → error
-- [ ] Unauthenticated visit to a protected route → redirect
-- [ ] Sign out → home, session cleared
-
-### Profile
-- [ ] Update each field → success, persisted
-- [ ] Required field empty → error
-- [ ] Server rejection → error shown, form recoverable
-- [ ] Saving state → button disabled, progress announced
-- [ ] Keyboard: full form reachable
-- [ ] Mobile: usable at 375px
-
-## Acceptance
-
-- Passes on Chromium, Firefox, WebKit
-- Passes on a 375px viewport
-- Automated accessibility scan clean
-- No console errors during the run
-- No flakes across three consecutive runs
-```
-
----
-
-## Debugging
-
-**Element not found** — use a locator rather than an immediate action. Locators carry
-built-in waiting; `page.click` on a raw selector does not.
-
-```typescript
-// Fragile
-await page.click("button[type=submit]");
-
-// Correct
-await page.getByRole("button", { name: "Save" }).click();
-```
-
-**Flaky test** — you are waiting on time instead of state.
-
-```typescript
-// Wrong
-await page.waitForTimeout(1000);
-await page.getByRole("button", { name: "Save" }).click();
-
-// Right
-await page.getByRole("button", { name: "Save" }).click();
-await expect(page.getByRole("status")).toContainText("Saved");
-```
-
-**Strict mode violation** — the locator matched several elements. Narrow it with a
-name or a role rather than reaching for `.first()`, which hides the ambiguity instead
-of resolving it.
-
-Interactive investigation: `<pkg-manager> run test:e2e:ui`, or `:debug` for a
-step-through, or `:headed` to watch it run.
+- The config sets `baseURL`; specs navigate with relative paths only (rule 5).
+- Playwright resolves `testDir` relative to the config file — a config that does not
+  sit at the repository root must adjust the repo-relative `<e2e-dir>` path
+  accordingly.
+- Write `<web-dir>/docs/e2e-plan.md` before the first spec. It is what you check
+  coverage against afterwards.
+- Use locators, never immediate actions on raw selectors — locators carry built-in
+  waiting.
+- Fix flakiness by waiting on state, never on time (rule 7).
+- Resolve a strict mode violation by narrowing the locator with a name or role, not
+  with `.first()`, which hides the ambiguity instead of resolving it.
 
 ---
 
@@ -651,6 +256,13 @@ step-through, or `:headed` to watch it run.
 - [ ] All paths relative
 - [ ] Every required coverage category present
 - [ ] Interception used only to inject failures
+
+## Reference documents
+
+| Deep dive | Reference |
+| --------- | --------- |
+| Spec patterns per flow: auth, forms, empty states, navigation, accessibility, mobile, theming | [`references/spec-patterns.md`](references/spec-patterns.md) |
+| Playwright config, e2e plan template, debugging | [`references/configuration-and-debugging.md`](references/configuration-and-debugging.md) |
 
 ## Related skills
 

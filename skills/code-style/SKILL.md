@@ -76,13 +76,13 @@ Load only what the current task needs.
 
 | Topic | Document |
 | ----- | -------- |
-| Arrow functions, and why React is not an exception | [`helpers/arrow-functions.md`](helpers/arrow-functions.md) |
-| Export blocks, type separation, import ordering | [`helpers/exports-and-imports.md`](helpers/exports-and-imports.md) |
-| Function comments, class focus, nesting, guard clauses, constants | [`helpers/structure-and-constants.md`](helpers/structure-and-constants.md) |
-| Files, folders, classes, variables, booleans, tests, and skill names | [`helpers/naming-conventions.md`](helpers/naming-conventions.md) |
-| Compiler configuration, module resolution, project references, `interface` vs `type`, type-only imports, deriving types from values, exhaustiveness, narrowing at boundaries, error classes | [`helpers/typescript-conventions.md`](helpers/typescript-conventions.md) |
-| Type parameters, constraints, inference, generic ports and components, and the generic shapes that are really casts | [`helpers/generics.md`](helpers/generics.md) |
-| Hexagonal boundaries, package handling, dependency direction, build pipeline | [`helpers/build-standards.md`](helpers/build-standards.md) |
+| Arrow functions, and why React is not an exception | [`references/arrow-functions.md`](references/arrow-functions.md) |
+| Export blocks, type separation, import ordering | [`references/exports-and-imports.md`](references/exports-and-imports.md) |
+| Function comments, class focus, nesting, guard clauses, constants | [`references/structure-and-constants.md`](references/structure-and-constants.md) |
+| Files, folders, classes, variables, booleans, tests, and skill names | [`references/naming-conventions.md`](references/naming-conventions.md) |
+| Compiler configuration, module resolution, project references, `interface` vs `type`, type-only imports, deriving types from values, exhaustiveness, narrowing at boundaries, error classes | [`references/typescript-conventions.md`](references/typescript-conventions.md) |
+| Type parameters, constraints, inference, generic ports and components, and the generic shapes that are really casts | [`references/generics.md`](references/generics.md) |
+| Hexagonal boundaries, package handling, dependency direction, build pipeline | [`references/build-standards.md`](references/build-standards.md) |
 
 ---
 

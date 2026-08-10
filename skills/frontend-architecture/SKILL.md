@@ -382,111 +382,13 @@ export type { AuthContextValue };
 
 ## Theming
 
-All of `<theme-pkg>` exists to answer one question: what does `bg-primary` resolve to
-right now. Three layers answer it, and each has exactly one job.
+All of `<theme-pkg>` exists to answer one question: what does `bg-primary` resolve to right now. Three layers answer it, and each has exactly one job:
 
-### Layer 1 — token definitions
+- **Layer 1 — token definitions.** Tokens come from `<theme-pkg>`, authored in `<token-format>` and emitted as CSS custom properties scoped to a theme selector. Every theme defines the same key set.
+- **Layer 2 — the utility-class bridge.** Maps utility names onto the tokens. `inline` is load-bearing in the `@theme` block — without it Tailwind bakes light-mode values in at build time and theme switching silently breaks. When `css-framework-version` is `4` there is no `tailwind.config.ts`; when it is `3` the CSS-first `@theme` block does not apply.
+- **Layer 3 — the provider.** Exactly one provider per repo owns the DOM and applies `<dark-mode-strategy>`; downstream packages re-export it, never reimplement it.
 
-Tokens are authored in `<token-format>` and emitted as CSS custom properties scoped to
-a theme selector. Every theme defines the same key set; a key present in light and
-missing in dark is a token that renders transparent in dark mode, silently.
-
-```scss
-// <theme-pkg>/src/themes/<name>/light/colors.scss
-@mixin colors {
-  --background: hsl(210 35% 99%);
-  --foreground: hsl(210 50% 5%);
-
-  // A scale plus a semantic alias pointing into it. Components use the alias;
-  // the scale exists so the alias can move without a find-and-replace.
-  --primary-50: hsl(210 90% 96%);
-  --primary-500: hsl(210 80% 45%);
-  --primary-900: hsl(210 70% 18%);
-  --primary: var(--primary-500);
-  --primary-foreground: hsl(0 0% 100%);
-}
-```
-
-```scss
-// <theme-pkg>/src/themes/<name>/light/index.scss — applied under the theme attribute
-@use 'colors' as colors;
-
-[data-theme="<name>"] {
-  @include colors.colors;
-}
-```
-
-### Layer 2 — the utility-class bridge
-
-When `css-framework-version` is `4`, Tailwind is configured in CSS, not in a
-JavaScript config file. **Do not add a `tailwind.config.ts` to a v4 project** — it is
-not read, and its presence tells the next reader to edit a file that does nothing.
-When it is `3`, the config file is real and the CSS-first `@theme` block below does
-not apply — the token mapping lives in `tailwind.config.ts` instead.
-
-```css
-/* <theme-pkg>/src/tailwind.css — maps utility names onto the tokens above */
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-}
-```
-
-`inline` is load-bearing. Without it Tailwind resolves each `var()` at build time and
-bakes in the light-mode value, and runtime theme switching stops working while the
-build still succeeds — the failure shows up only as a page that will not go dark.
-
-The application imports the layers in order, once:
-
-```scss
-// <web-dir>/src/app/index.scss
-@import "tailwindcss";
-@import "<ui-scope>/<theme-pkg>/tailwind";   // the bridge
-@import "<ui-scope>/<theme-pkg>/themes";     // the token values
-```
-
-### Layer 3 — the provider
-
-One provider owns the DOM. It resolves the requested mode against the system
-preference, applies `<dark-mode-strategy>` to the document element, and persists the
-choice. Nothing else in the codebase writes a theme class or attribute.
-
-- Read the current color theme before re-applying it. Stamping a literal theme name on
-  every mode change overrides the color-theme setter and makes multi-theme support
-  unreachable while every individual function still looks correct.
-- Wrap `localStorage` — it throws in private browsing and when quota is exceeded.
-- Guard on `typeof window` if the package can be imported in a server context.
-- **Exactly one provider per repo.** A second implementation of the same provider in a
-  downstream package is the defect this rule exists to prevent: consumers import
-  whichever one their path resolution happens to find, the two disagree on the shape of
-  the context, and the bug reproduces on one screen and not another. Downstream
-  packages re-export the provider; they do not reimplement it.
-
-### The token values
-
-```css
-[data-theme="blue"] {
-  --primary: hsl(210 80% 45%);
-  --background: hsl(210 35% 99%);
-}
-
-.dark[data-theme="blue"] {
-  --primary: hsl(210 85% 60%);
-  --background: hsl(210 30% 8%);
-}
-```
-
-### In components
-
-```tsx
-// Wrong — palette literal, no dark-mode story
-<button className="bg-blue-500 text-white">Save</button>
-
-// Right — semantic token, themes automatically
-<button className="bg-primary text-on-primary">Save</button>
-```
+Full layer-by-layer code and token examples: [`references/theming.md`](references/theming.md).
 
 ---
 
@@ -519,147 +421,21 @@ choice. Nothing else in the codebase writes a theme class or attribute.
 
 ## Reuse patterns
 
-### Shared fetching logic
+- Shared stateful logic goes in a custom hook. A fetch hook must abort on unmount, and must take a parser so `TData` is inferred from the code that actually checks the payload — see `code-style/references/generics.md`.
+- Compound components avoid repeating JSX structure.
+- Pure utilities keep currency and locale as parameters, never hardcoded constants.
 
-```tsx
-import { useEffect, useState } from "react";
-
-// Fetches JSON from a path and tracks loading and error state. The parser is what
-// makes TData true, so it is a parameter rather than something the caller asserts.
-const useFetch = <TData,>(url: string, parse: (raw: unknown) => TData) => {
-  const [data, setData] = useState<TData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const load = async () => {
-      try {
-        const response = await fetch(url, { signal: controller.signal });
-        setData(parse(await response.json()));
-      } catch (err) {
-        if (!controller.signal.aborted) {
-          setError(err as Error);
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void load();
-
-    return () => controller.abort();
-  }, [url, parse]);
-
-  return { data, isLoading, error };
-};
-
-export { useFetch };
-```
-
-Two things here are not optional.
-
-**The abort on unmount** — without it, a resolved fetch sets state on an unmounted
-component and leaks the request.
-
-**The parser** — `useFetch<User>(url)` with the response cast to `User` is the most
-common unchecked cast in a React codebase. The type parameter appears only in the
-return, nothing verifies the payload, and a changed endpoint keeps compiling until it
-fails somewhere unrelated. Passing the parser makes `TData` inferred from the thing
-that actually checks it. See `code-style/helpers/generics.md`.
-
-### Compound components
-
-```tsx
-import type { ReactNode } from "react";
-
-const Card = ({ children }: { children: ReactNode }) => {
-  return <div className="rounded-lg border border-divider p-4">{children}</div>;
-};
-
-const CardTitle = ({ children }: { children: ReactNode }) => {
-  return <h3 className="text-lg font-semibold">{children}</h3>;
-};
-
-const CardDescription = ({ children }: { children: ReactNode }) => {
-  return <p className="text-muted">{children}</p>;
-};
-
-export { Card, CardTitle, CardDescription };
-```
-
-### Pure utilities
-
-```typescript
-const DEFAULT_LOCALE = "en-US";
-
-// Formats a date for display in the user's locale.
-const formatDate = (date: Date, locale: string = DEFAULT_LOCALE): string => {
-  return new Intl.DateTimeFormat(locale).format(date);
-};
-
-// Formats a minor-unit amount as currency.
-const formatCurrency = (
-  amount: number,
-  currency: string,
-  locale: string = DEFAULT_LOCALE
-): string => {
-  return new Intl.NumberFormat(locale, { style: "currency", currency }).format(amount);
-};
-
-export { formatDate, formatCurrency };
-```
-
-Currency and locale are parameters, not constants. Hardcoding `USD` is the kind of
-default that survives all the way to a production incident.
+Full code examples: [`references/reuse-and-performance.md`](references/reuse-and-performance.md).
 
 ---
 
 ## Performance
 
-### Lazy routes
+- Lazy-load routes with dynamic imports behind `Suspense`.
+- Memoize only after measuring — `memo` on a cheap component costs more than it saves.
+- Virtualize lists past a few hundred rows; below that, the virtualization overhead and the accessibility cost of a windowed list are not worth it.
 
-```tsx
-import { lazy, Suspense } from "react";
-
-import { LoadingIndicator } from "<ui-scope>/<wrappers-pkg>";
-
-const Dashboard = lazy(() => import("./pages/dashboard.page"));
-
-const App = () => {
-  return (
-    <Suspense fallback={<LoadingIndicator />}>
-      <Dashboard />
-    </Suspense>
-  );
-};
-
-export { App };
-```
-
-### Memoization
-
-Measure first. `memo` on a cheap component costs more than it saves.
-
-```tsx
-import type { Product } from "./product.types";
-
-import { memo } from "react";
-
-const ProductCard = memo(({ product }: { product: Product }) => {
-  return <article>{product.name}</article>;
-});
-
-ProductCard.displayName = "ProductCard";
-
-export { ProductCard };
-```
-
-### Long lists
-
-Virtualize past a few hundred rows. Below that, the virtualization overhead and the
-accessibility cost of a windowed list are not worth it.
+Code examples: [`references/reuse-and-performance.md`](references/reuse-and-performance.md).
 
 ---
 
@@ -689,6 +465,11 @@ Package-level, when the change touched `<ui-packages-dir>`:
 - [ ] No debug logging, and no emoji in rendered strings
 - [ ] No `process.env` read in code that ships to the browser — the bundler does not
       define it, and the read yields `undefined` at runtime rather than failing at build
+
+| Deep dive | Reference |
+| --------- | --------- |
+| Three-layer theming: tokens, utility bridge, provider | [`references/theming.md`](references/theming.md) |
+| Reuse and performance patterns with full code | [`references/reuse-and-performance.md`](references/reuse-and-performance.md) |
 
 ## Related skills
 

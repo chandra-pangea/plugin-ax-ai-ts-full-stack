@@ -16,7 +16,9 @@ the repo as a plugin; Cursor, Codex, and Gemini CLI get the same skills globally
 ```
 skills/                     the ten skills — the whole deliverable (spec component)
 plugin.json                 open Agent Plugins manifest (Cursor and other conformant clients)
-.claude-plugin/             plugin + marketplace manifests (Claude Code)
+.claude-plugin/             plugin + marketplace manifests (Claude Code; Codex reads the
+                            marketplace file too)
+.codex-plugin/              plugin manifest (Codex)
 com.anthropic.claude-code/  Claude Code extension namespace: the SessionStart hook
                             that injects the digest below (hooks are not in the
                             open standard's v1, so they live here per its
@@ -40,7 +42,7 @@ next time it is pulled, and installed copies cannot drift from the source.
 
 | Skill | Governs |
 | ----- | ------- |
-| [`code-style`](skills/code-style/) | Arrow functions, consolidated exports, type import/export separation, import ordering, naming, no hardcodes, function comments, TypeScript compiler baseline and generics discipline, and what generated code is exempt from. Seven helper documents for depth. |
+| [`code-style`](skills/code-style/) | Arrow functions, consolidated exports, type import/export separation, import ordering, naming, no hardcodes, function comments, TypeScript compiler baseline and generics discipline, and what generated code is exempt from. Seven reference documents for depth. |
 | [`code-review`](skills/code-review/) | On-demand review against 13 categories, including type safety and generics; writes durable findings to a per-package review document. |
 
 ### Backend
@@ -54,7 +56,7 @@ next time it is pulled, and installed copies cannot drift from the source.
 
 | Skill | Governs |
 | ----- | ------- |
-| [`package-scaffold`](skills/package-scaffold/) | Creating a shared runtime package: folder layout, public-class pattern, config files, package documentation. One helper document for design patterns. |
+| [`package-scaffold`](skills/package-scaffold/) | Creating a shared runtime package: folder layout, public-class pattern, config files, package documentation. One reference document for design patterns. |
 | [`package-checklist`](skills/package-checklist/) | Validating a package — runtime or UI: naming, structure, scripts, exports that actually resolve, README completeness, pre-PR gate. |
 
 ### Frontend
@@ -119,12 +121,27 @@ ln -s /path/to/plugin-ax-ai-ts-full-stack ~/.cursor/plugins/local/ts-full-stack
 Then restart Cursor (or **Developer: Reload Window**). Teams/Enterprise plans can
 instead import the repo as a team marketplace from the dashboard.
 
-The plugin route loads the ten skills. The Agent Plugins standard has no hooks, so
-the **always-active digest** still comes from `install.sh` below — run both for the
-full Claude Code-equivalent behavior, or just `install.sh`, which also covers the
-skills.
+## Installing — Codex (as a plugin)
 
-## Installing — Cursor, Codex, Gemini CLI (global skills + digest)
+Codex installs Agent Plugins natively and reads this repo's
+[`.codex-plugin/plugin.json`](.codex-plugin/plugin.json) manifest (it also accepts
+`.claude-plugin/marketplace.json` as a legacy marketplace format). From a clone:
+
+```bash
+codex plugin marketplace add /path/to/plugin-ax-ai-ts-full-stack
+```
+
+then install `ts-full-stack` via Codex's `/plugin install` and reload plugins.
+
+### About the always-active digest
+
+The plugin routes above load the ten skills natively — no `install.sh` needed. What
+no cross-tool standard carries yet is **hooks**, so the always-active digest (the
+rules applying without any skill being invoked) is native only in Claude Code. To get
+it in Cursor or Codex too, run `install.sh` below once — it only adds the digest
+block to their global memory files; the skills are already covered.
+
+## Installing — Gemini CLI, or any tool without plugin support (global skills + digest)
 
 These tools read the same open Agent Skills format from a **global** directory, so
 one install serves every project. Anyone with repo access, starting from nothing:
@@ -264,15 +281,15 @@ survives an argument that *"define all tokens"* does not.
 ### 5. Cross-references resolve
 
 Skills reference each other by bare name in backticks — `` `frontend-testing` `` —
-and helpers by path-style name — `` `code-style/helpers/generics.md` ``. Renaming or
+and reference documents by path-style name — `` `code-style/references/generics.md` ``. Renaming or
 deleting one means updating every reference, plus this file and the digest.
 
-### 6. Helpers carry depth, not rules
+### 6. References carry depth, not rules
 
-`SKILL.md` holds the rules and stays scannable; a helper holds reference material for
+`SKILL.md` holds the rules and stays scannable; a reference document holds depth material for
 one topic and loads only when needed. When `SKILL.md` outgrows what someone will read
-before starting work, move depth into a helper and leave the rule behind. Add the
-helper to the parent's helper table.
+before starting work, move depth into a reference document and leave the rule behind. Add it to the
+parent's reference table.
 
 ## Naming
 
@@ -290,7 +307,7 @@ Skill names follow `<surface>-<concern>` in kebab-case. Surface is `backend`,
   `backend-architecture`/`frontend-architecture` let a reader predict a name.
 
 The full rules, including the description convention, live in
-[`code-style/helpers/naming-conventions.md`](skills/code-style/helpers/naming-conventions.md)
+[`code-style/references/naming-conventions.md`](skills/code-style/references/naming-conventions.md)
 so the convention is enforced by a skill rather than only documented here.
 
 ## Before finishing
@@ -303,7 +320,7 @@ for d in skills/*/; do
 done
 
 # Code fences balanced
-for f in skills/*/SKILL.md skills/*/helpers/*.md; do
+for f in skills/*/SKILL.md skills/*/references/*.md; do
   n=$(grep -c '^```' "$f"); [ $((n % 2)) -eq 0 ] || echo "odd fences: $f"
 done
 
@@ -312,9 +329,9 @@ for n in $(grep -rhoE '`(backend|frontend|package|code)-[a-z-]+`' skills/ | tr -
   [ -d "skills/$n" ] || echo "dangling reference: $n"
 done
 
-# Every path-style helper reference resolves to a file
-for p in $(grep -rhoE '`[a-z-]+/helpers/[a-z-]+\.md`' skills/ | tr -d '`' | sort -u); do
-  [ -f "skills/$p" ] || echo "dangling helper reference: $p"
+# Every path-style reference-document link resolves to a file
+for p in $(grep -rhoE '`[a-z-]+/references/[a-z-]+\.md`' skills/ | tr -d '`' | sort -u); do
+  [ -f "skills/$p" ] || echo "dangling reference document: $p"
 done
 
 # No project-specific values leaked in (negative examples carry // wrong on the line)
@@ -327,7 +344,7 @@ jq . plugin.json .claude-plugin/plugin.json .claude-plugin/marketplace.json \
 
 - [ ] Checks above pass
 - [ ] New placeholders added to `STACK-PROFILE.template.md`
-- [ ] New skill or helper added to the tables above and the parent's helper table
+- [ ] New skill or reference document added to the tables above and the parent's reference table
 - [ ] Samples compile and obey the set's own rules
 - [ ] `plugin.json` and `marketplace.json` versions bumped together
 - [ ] `standards-digest.md` updated when a mandatory rule changes

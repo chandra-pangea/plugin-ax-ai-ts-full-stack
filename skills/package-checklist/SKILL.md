@@ -92,7 +92,7 @@ Split rather than conflate.
 | **Adapter** | Framework integration as a submodule | Core validator plus a middleware adapter |
 | **Factory** | Export a factory when wiring is non-trivial | `LoggerFactory`, `SecretsManagerFactory` |
 
-Full reference: `package-scaffold/helpers/design-patterns.md`.
+Full reference: `package-scaffold/references/design-patterns.md`.
 
 ## Required structure
 
@@ -170,7 +170,7 @@ changes.
   restating `strict`, `target`, `module`, or `moduleResolution` has either diverged
   deliberately, in which case a comment says why, or drifted. Sibling packages
   disagreeing on module resolution is a workspace-level defect, not a local choice —
-  see `code-style/helpers/typescript-conventions.md`.
+  see `code-style/references/typescript-conventions.md`.
 
 Required scripts: `build`, `test`, `typecheck`, `clean`. A package missing any of
 these fails the checklist. A UI package with no unit-test surface still declares
