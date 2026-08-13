@@ -9,16 +9,16 @@ Delivery concerns — container packaging and commit policy — are deliberately
 scope. This set governs how code is written and verified, not how it ships.
 
 Install once per machine; the skills then apply to **every** Node/React/JS/TS project
-automatically, with nothing copied into any consuming repository. Claude Code loads
-the repo as a plugin; Cursor, Codex, and Gemini CLI get the same skills globally via
-`install.sh`.
+automatically, with nothing copied into any consuming repository. Claude Code, Cursor,
+and Codex load the repo as a plugin — each reads a manifest in this repo directly, with
+Cursor and Codex both loading the portable root `plugin.json`. Gemini CLI and any tool
+without plugin support get the same skills globally via `install.sh`.
 
 ```
 skills/                     the ten skills — the whole deliverable (spec component)
-plugin.json                 open Agent Plugins manifest (Cursor and other conformant clients)
-.claude-plugin/             plugin + marketplace manifests (Claude Code; Codex reads the
-                            marketplace file too)
-.codex-plugin/              plugin manifest (Codex)
+plugin.json                 open Agent Plugins manifest — the single portable source of
+                            truth, read by Cursor and Codex without changes
+.claude-plugin/             plugin + marketplace manifests (Claude Code native format only)
 com.anthropic.claude-code/  Claude Code extension namespace: the SessionStart hook
                             that injects the digest below (hooks are not in the
                             open standard's v1, so they live here per its
@@ -123,15 +123,23 @@ instead import the repo as a team marketplace from the dashboard.
 
 ## Installing — Codex (as a plugin)
 
-Codex installs Agent Plugins natively and reads this repo's
-[`.codex-plugin/plugin.json`](.codex-plugin/plugin.json) manifest (it also accepts
-`.claude-plugin/marketplace.json` as a legacy marketplace format). From a clone:
+Codex CLI implements the [Agent Plugins](https://agent-plugins.org/) 1.0 standard and
+loads this repo from its **root [`plugin.json`](plugin.json)** — no `.codex-plugin/`
+file is involved, and skills are discovered from `skills/` by location. From a clone:
 
 ```bash
-codex plugin marketplace add /path/to/plugin-ax-ai-ts-full-stack
+codex plugins install /path/to/plugin-ax-ai-ts-full-stack
 ```
 
-then install `ts-full-stack` via Codex's `/plugin install` and reload plugins.
+Or, once it is published to your catalogue:
+
+```bash
+codex plugins install ts-full-stack
+```
+
+Reload plugins afterward. The ten skills load natively; the always-active digest is a
+hook, which is Claude-Code-only, so run `install.sh` once to get the digest into
+Codex's global memory file (`~/.codex/AGENTS.md`) — see the digest note below.
 
 ### About the always-active digest
 
@@ -340,13 +348,18 @@ grep -rnE '@(acme|canopy|util)/|localhost:[0-9]+|/Users/' skills/ | grep -v '<' 
 # Manifests are valid JSON
 jq . plugin.json .claude-plugin/plugin.json .claude-plugin/marketplace.json \
   com.anthropic.claude-code/hooks/hooks.json > /dev/null
+
+# Every manifest agrees on the version (the root plugin.json is the source of truth)
+vers=$(grep -h '"version"' plugin.json .claude-plugin/plugin.json \
+  .claude-plugin/marketplace.json 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | sort -u)
+[ "$(printf '%s\n' "$vers" | grep -c .)" -eq 1 ] || echo "version drift across manifests: $vers"
 ```
 
 - [ ] Checks above pass
 - [ ] New placeholders added to `STACK-PROFILE.template.md`
 - [ ] New skill or reference document added to the tables above and the parent's reference table
 - [ ] Samples compile and obey the set's own rules
-- [ ] `plugin.json` and `marketplace.json` versions bumped together
+- [ ] All manifests bumped together — root `plugin.json`, `.claude-plugin/plugin.json`, and `.claude-plugin/marketplace.json` (the version-drift check above passes)
 - [ ] `standards-digest.md` updated when a mandatory rule changes
 
 ---

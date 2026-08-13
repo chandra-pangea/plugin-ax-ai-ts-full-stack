@@ -6,5 +6,6 @@
   "author": { "name": "Aatmix", "email": "it@aatmix.com" },
   "repository": "https://dev.azure.com/aatmix/ax-ai-platform/_git/plugin-ax-ai-ts-full-stack",
   "keywords": ["typescript", "javascript", "react", "node", "skills", "standards"],
+  "license": "UNLICENSED",
   "hooks": "./com.anthropic.claude-code/hooks/hooks.json"
 }
