@@ -1,5 +1,5 @@
 {
   "name": "ts-full-stack",
   "version": "2.1.0",
-  "description": "Ten portable JS/TS full-stack skills — architecture, code style, zero-mock testing, package scaffolding and validation, accessibility, component docs, and review — resolved against a per-repo STACK-PROFILE.md with repo inference as fallback. A SessionStart hook injects an always-active standards digest in JS/TS projects."
+  "description": "Ten portable JS/TS full-stack skills — architecture, code style, zero-mock testing, package scaffolding and validation, accessibility, component docs, and review — resolved against a per-repo STACK-PROFILE.md with repo inference as fallback."
 }
