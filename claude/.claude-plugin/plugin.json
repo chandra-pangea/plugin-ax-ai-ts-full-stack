@@ -7,7 +7,7 @@
     "name": "Aatmix",
     "email": "it@aatmix.com"
   },
-  "repository": "https://dev.azure.com/aatmix/ax-ai-platform/_git/plugin-ax-ai-ts-full-stack",
+  "repository": "https://github.com/chandra-pangea/plugin-ax-ai-ts-full-stack",
   "keywords": [
     "typescript",
     "javascript",
